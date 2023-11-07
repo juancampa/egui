@@ -8,7 +8,7 @@ use crate::*;
 // TODO(emilk): this is not currently stored in `Memory::data`, but maybe it should be?
 #[derive(Clone, Copy, Debug)]
 #[cfg_attr(feature = "serde", derive(serde::Deserialize, serde::Serialize))]
-pub(crate) struct State {
+pub struct State {
     /// Last known pos of the pivot
     pub pivot_pos: Pos2,
 

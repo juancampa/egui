@@ -87,7 +87,7 @@ pub struct Memory {
 
     // -------------------------------------------------
     // Per-viewport:
-    areas: ViewportIdMap<Areas>,
+    pub areas: ViewportIdMap<Areas>,
 
     #[cfg_attr(feature = "persistence", serde(skip))]
     pub(crate) interactions: ViewportIdMap<Interaction>,
@@ -923,7 +923,7 @@ impl Areas {
         self.areas.len()
     }
 
-    pub(crate) fn get(&self, id: Id) -> Option<&area::State> {
+    pub fn get(&self, id: Id) -> Option<&area::State> {
         self.areas.get(&id)
     }
 
