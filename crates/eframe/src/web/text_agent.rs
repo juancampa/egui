@@ -4,6 +4,7 @@
 use std::{cell::Cell, rc::Rc};
 
 use wasm_bindgen::prelude::*;
+use web_sys::{console, HtmlElement};
 
 use super::{canvas_element, AppRunner, WebRunner};
 
@@ -99,6 +100,26 @@ pub fn install_text_agent(runner_ref: &WebRunner) -> Result<(), JsValue> {
         })?;
     }
 
+    // When the window (or iframe) gains focus, focus on the text agent.
+    runner_ref.add_event_listener(
+        &window,
+        "focus",
+        move |event: web_sys::MouseEvent, runner_lock| {
+            call_after_delay(std::time::Duration::from_millis(10), move || {
+                let window = web_sys::window().unwrap();
+                let document = window.document().unwrap();
+                if document.has_focus().unwrap_or_default() {
+                    text_agent().focus().ok();
+                    //input_refocus.focus().ok();
+                }
+            });
+        },
+    )?;
+
+    // MEMBRANE NOTE: The `focusout` handler assumes that there's nothing else in the page that could need input. For VSCode this
+    // doesn't work because it doesn't let the user type anywhere else (egui keeps stealing the focus). We use the
+    // `focus` event above instead
+
     // When input lost focus, focus on it again.
     // It is useful when user click somewhere outside canvas.
     let input_refocus = input.clone();
@@ -127,11 +148,15 @@ pub fn update_text_agent(runner: &mut AppRunner) -> Option<()> {
         let is_already_editing = input.hidden();
         if is_already_editing {
             input.set_hidden(false);
+            let latest_touch_pos = runner.input.latest_touch_pos;
+
+            // Read comment after the drop below.
+            drop(runner);
             input.focus().ok()?;
 
             // Move up canvas so that text edit is shown at ~30% of screen height.
             // Only on touch screens, when keyboard popups.
-            if let Some(latest_touch_pos) = runner.input.latest_touch_pos {
+            if let Some(latest_touch_pos) = latest_touch_pos {
                 let window_height = window.inner_height().ok()?.as_f64()? as f32;
                 let current_rel = latest_touch_pos.y / window_height;
 
