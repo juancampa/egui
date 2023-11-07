@@ -425,6 +425,7 @@ pub use {
     layers::{LayerId, Order},
     layout::*,
     load::SizeHint,
+    memory::DragState,
     memory::{Memory, Options},
     painter::Painter,
     response::{InnerResponse, Response},

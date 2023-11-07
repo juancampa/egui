@@ -1117,7 +1117,7 @@ impl Context {
                 interaction.drag_interest |= contains_pointer && sense.drag;
 
                 res.is_pointer_button_down_on =
-                    interaction.click_id == Some(id) || interaction.drag_id == Some(id);
+                    interaction.click_id == Some(id) || memory.is_being_dragged(id);
 
                 if sense.click && sense.drag {
                     // This widget is sensitive to both clicks and drags.
@@ -1128,15 +1128,40 @@ impl Context {
                     res.drag_started = res.dragged && input.pointer.started_decidedly_dragging;
                 } else if sense.drag {
                     // We are just sensitive to drags, so we can mark ourself as dragged right away:
-                    res.dragged = interaction.drag_id == Some(id);
+                    res.dragged = memory.is_being_dragged(id);
                     // res.drag_started will be filled below if applicable
                 }
 
+                if let Some(DragState::Dragging(drag_id, true)) = memory.interaction.drag_id {
+                    if drag_id == id {
+                        memory.interaction.drag_id = Some(DragState::Dragging(id, false));
+                    }
+                }
                 for pointer_event in &input.pointer.pointer_events {
                     match pointer_event {
-                        PointerEvent::Moved(_) => {}
+                        PointerEvent::NativeDragEnd(_pos) => {
+                            response.drag_released = response.dragged;
+                            response.dragged = false;
+                        }
+                        PointerEvent::Moved(_) => {
+                            // MEMBRANE: There's no need for this anymore since we use the browser's drag detection
+                            // as the source of truth.
+                        }
 
-                        PointerEvent::Pressed { .. } => {
+                        PointerEvent::NativeDragStart(pos) => {
+                            if let Some(DragState::Detecting(drag_id, start_pos)) =
+                                memory.interaction.drag_id
+                            {
+                                // MEMBRANE: Removed distance check. There's no need for it since the browser is telling
+                                // us it's definitely a drag
+                                if id == drag_id {
+                                    memory.interaction.drag_id =
+                                        Some(DragState::Dragging(id, true));
+                                    response.dragged = true;
+                                }
+                            }
+                        }
+                        PointerEvent::Pressed { position, .. } => {
                             if contains_pointer {
                                 let interaction = memory.interaction_mut();
 
@@ -1155,7 +1180,8 @@ impl Context {
                                     && (interaction.drag_id.is_none() || interaction.drag_is_window)
                                 {
                                     // potential start of a drag
-                                    interaction.drag_id = Some(id);
+                                    memory.interaction.drag_id =
+                                        Some(DragState::Detecting(id, *position));
                                     interaction.drag_is_window = false;
                                     memory.set_window_interaction(None); // HACK: stop moving windows (if any)
 

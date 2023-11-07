@@ -123,6 +123,9 @@ pub struct PlatformOutput {
     /// NOTE: this needs to be per-viewport.
     #[cfg(feature = "accesskit")]
     pub accesskit_update: Option<accesskit::TreeUpdate>,
+
+    /// Set to a value that will be dragged natively
+    pub native_drag_data: Option<String>,
 }
 
 impl PlatformOutput {
@@ -155,6 +158,7 @@ impl PlatformOutput {
             ime,
             #[cfg(feature = "accesskit")]
             accesskit_update,
+            native_drag_data,
         } = newer;
 
         self.cursor_icon = cursor_icon;
@@ -174,12 +178,15 @@ impl PlatformOutput {
             // so overwrite rather than appending.
             self.accesskit_update = accesskit_update;
         }
+
+        self.native_drag_data = native_drag_data;
     }
 
     /// Take everything ephemeral (everything except `cursor_icon` currently)
     pub fn take(&mut self) -> Self {
         let taken = std::mem::take(self);
         self.cursor_icon = taken.cursor_icon; // everything else is ephemeral
+                                              // self.native_drag_data = taken.native_drag_data.clone();
         taken
     }
 }

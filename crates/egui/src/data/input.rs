@@ -494,6 +494,9 @@ pub enum Event {
     #[cfg(feature = "accesskit")]
     AccessKitActionRequest(accesskit::ActionRequest),
 
+    NativeDragStart(Pos2),
+    NativeDragEnd(Pos2),
+
     /// The reply of a screenshot requested with [`crate::ViewportCommand::Screenshot`].
     Screenshot {
         viewport_id: crate::ViewportId,

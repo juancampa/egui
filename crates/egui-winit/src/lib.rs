@@ -793,6 +793,8 @@ impl State {
             ime,
             #[cfg(feature = "accesskit")]
             accesskit_update,
+            // TODO: MEMBRANE
+            native_drag_data: _,
         } = platform_output;
 
         self.set_cursor_icon(window, cursor_icon);

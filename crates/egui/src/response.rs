@@ -2,6 +2,7 @@ use std::{any::Any, sync::Arc};
 
 use crate::{
     emath::{Align, Pos2, Rect, Vec2},
+    memory::DragState,
     menu, Context, CursorIcon, Event, Id, LayerId, PointerButton, Sense, Ui, WidgetText,
     NUM_POINTER_BUTTONS,
 };
@@ -309,6 +310,26 @@ impl Response {
     #[inline]
     pub fn dragged_by(&self, button: PointerButton) -> bool {
         self.dragged() && self.ctx.input(|i| i.pointer.button_down(button))
+    }
+
+    // /// Did a drag on this widgets begin this frame?
+    // pub fn drag_started(&self) -> bool {
+    //     if self.dragged {
+    //         if let Some(DragState::Dragging(_, started)) =
+    //             self.ctx.memory(|mem| mem.interaction.drag_id)
+    //         {
+    //             started
+    //         } else {
+    //             false
+    //         }
+    //     } else {
+    //         false
+    //     }
+    // }
+
+    /// Did a drag on this widgets by the button begin this frame?
+    pub fn drag_started_by(&self, button: PointerButton) -> bool {
+        self.drag_started() && self.ctx.input(|i| i.pointer.button_pressed(button))
     }
 
     /// The widget was being dragged, but now it has been released.

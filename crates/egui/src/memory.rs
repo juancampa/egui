@@ -283,6 +283,34 @@ impl Options {
 
 // ----------------------------------------------------------------------------
 
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum DragState {
+    Detecting(Id, Pos2),
+    // Bool indicates that the drag started on this frame
+    Dragging(Id, bool),
+}
+
+impl DragState {
+    pub(crate) fn id(&self) -> Id {
+        match self {
+            DragState::Detecting(id, _) => *id,
+            DragState::Dragging(id, _) => *id,
+        }
+    }
+    // pub(crate) fn is_dragging(&self) -> bool {
+    //     match self {
+    //         DragState::Detecting(_, _) => false,
+    //         DragState::Dragging(_, _) => true,
+    //     }
+    // }
+    // pub(crate) fn started_dragging(&self) -> bool {
+    //     match self {
+    //         DragState::Dragging(_, true) => true,
+    //         _ => false,
+    //     }
+    // }
+}
+
 /// Say there is a button in a scroll area.
 /// If the user clicks the button, the button should click.
 /// If the user drags the button we should scroll the scroll area.
@@ -301,7 +329,7 @@ pub(crate) struct Interaction {
     /// so the widget may not yet be marked as "dragged",
     /// as that can only happen after the mouse has moved a bit
     /// (at least if the widget is interesated in both clicks and drags).
-    pub drag_id: Option<Id>,
+    pub drag_id: Option<DragState>,
 
     pub focus: Focus,
 
@@ -757,7 +785,7 @@ impl Memory {
     /// Is any widget being dragged?
     #[inline(always)]
     pub fn is_anything_being_dragged(&self) -> bool {
-        self.interaction().drag_id.is_some()
+        matches!(self.interaction().drag_id, Some(DragState::Dragging(_, _)))
     }
 
     /// Is this specific widget being dragged?
@@ -768,7 +796,11 @@ impl Memory {
     /// when the mouse has moved a bit, but `is_being_dragged` will return true immediately.
     #[inline(always)]
     pub fn is_being_dragged(&self, id: Id) -> bool {
-        self.interaction().drag_id == Some(id)
+        if let Some(DragState::Dragging(drag_id, _)) = self.interaction.drag_id {
+            id == drag_id
+        } else {
+            false
+        }
     }
 
     /// Get the id of the widget being dragged, if any.
@@ -782,9 +814,10 @@ impl Memory {
         self.interaction().drag_id
     }
 
+    // TODO: rename `id` to `state`
     /// Set which widget is being dragged.
     #[inline(always)]
-    pub fn set_dragged_id(&mut self, id: Id) {
+    pub fn set_dragged_id(&mut self, id: DragState) {
         self.interaction_mut().drag_id = Some(id);
     }
 

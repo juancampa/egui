@@ -319,7 +319,7 @@ pub(crate) fn install_canvas_events(runner_ref: &WebRunner) -> Result<(), JsValu
                 // Make sure we paint the output of the above logic call asap:
                 runner.needs_repaint.repaint_asap();
             }
-            event.stop_propagation();
+            //event.stop_propagation();
             // Note: prevent_default breaks VSCode tab focusing, hence why we don't call it here.
         },
     )?;
@@ -331,8 +331,8 @@ pub(crate) fn install_canvas_events(runner_ref: &WebRunner) -> Result<(), JsValu
             let pos = pos_from_mouse_event(runner.canvas_id(), &event);
             runner.input.raw.events.push(egui::Event::PointerMoved(pos));
             runner.needs_repaint.repaint_asap();
-            event.stop_propagation();
-            event.prevent_default();
+            // event.stop_propagation();
+            // event.prevent_default();
         },
     )?;
 
@@ -356,8 +356,8 @@ pub(crate) fn install_canvas_events(runner_ref: &WebRunner) -> Result<(), JsValu
 
             text_agent::update_text_agent(runner);
         }
-        event.stop_propagation();
-        event.prevent_default();
+        // event.stop_propagation();
+        // event.prevent_default();
     })?;
 
     runner_ref.add_event_listener(
@@ -494,22 +494,108 @@ pub(crate) fn install_canvas_events(runner_ref: &WebRunner) -> Result<(), JsValu
         event.prevent_default();
     })?;
 
-    runner_ref.add_event_listener(&canvas, "dragover", |event: web_sys::DragEvent, runner| {
-        if let Some(data_transfer) = event.data_transfer() {
-            runner.input.raw.hovered_files.clear();
-            for i in 0..data_transfer.items().length() {
-                if let Some(item) = data_transfer.items().get(i) {
-                    runner.input.raw.hovered_files.push(egui::HoveredFile {
-                        mime: item.type_(),
-                        ..Default::default()
-                    });
+    runner_ref.add_event_listener(
+        &canvas,
+        "dragend",
+        |event: web_sys::DragEvent, mut runner_lock| {
+            if let Some(button) = button_from_mouse_event(&event) {
+                let pos = pos_from_mouse_event(runner_lock.canvas_id(), &event);
+                let modifiers = runner_lock.input.raw.modifiers;
+                let events = &mut runner_lock.input.raw.events;
+                events.push(egui::Event::PointerButton {
+                    pos,
+                    button,
+                    pressed: false,
+                    modifiers,
+                });
+
+                // TODO: HACK. Sending this event breaks when Escape is used to cancel the drag
+                events.push(egui::Event::NativeDragEnd(pos));
+                runner_lock.needs_repaint.repaint_asap();
+
+                text_agent::update_text_agent(runner_lock);
+
+                let window = web_sys::window().unwrap();
+                let document = window.document().unwrap();
+                if let Some(element) = document.get_element_by_id("eframe-dragged-element") {
+                    element.remove();
                 }
             }
-            runner.needs_repaint.repaint_asap();
+        },
+    )?;
+
+    runner_ref.add_event_listener(
+        &canvas,
+        "dragstart",
+        |event: web_sys::DragEvent, runner_lock| {
+            if let Some(data_transfer) = event.data_transfer() {
+                let pos = pos_from_mouse_event(runner_lock.canvas_id(), &event);
+                runner_lock
+                    .input
+                    .raw
+                    .events
+                    .push(egui::Event::NativeDragStart(pos));
+
+                // Run the logic to allow the app to set the native drag data
+                runner_lock.logic();
+
+                if let Some(data) = runner_lock.native_drag_data.take() {
+                    let window = web_sys::window().unwrap();
+                    let document = window.document().unwrap();
+                    let element = document.create_element("div").unwrap();
+                    element.set_id("eframe-dragged-element");
+                    document.body().unwrap().append_child(&element).unwrap();
+                    element.set_text_content(Some(data.as_str()));
+                    data_transfer.set_data("text/plain", &data).unwrap();
+                    data_transfer.set_drag_image(&element, 0, 0);
+                } else {
+                    // Don't let the browser drag the entire canvas
+                    event.stop_propagation();
+                    event.prevent_default();
+                }
+                runner_lock.needs_repaint.repaint_asap();
+            }
+        },
+    )?;
+
+    runner_ref.add_event_listener(
+        &canvas,
+        "dragover",
+        |event: web_sys::DragEvent, mut runner_lock| {
+            if let Some(data_transfer) = event.data_transfer() {
+                runner_lock.input.raw.hovered_files.clear();
+                for i in 0..data_transfer.items().length() {
+                    if let Some(item) = data_transfer.items().get(i) {
+                        runner_lock.input.raw.hovered_files.push(egui::HoveredFile {
+                            mime: item.type_(),
+                            ..Default::default()
+                        });
+                    }
+                }
+                // TODO: only run this if canvas itself is being dragged?
+                let pos = pos_from_mouse_event(runner_lock.canvas_id(), &event);
+                runner_lock
+                    .input
+                    .raw
+                    .events
+                    .push(egui::Event::PointerMoved(pos));
+                runner_lock.needs_repaint.repaint_asap();
+                event.stop_propagation();
+                event.prevent_default();
+            }
+        },
+    )?;
+
+    runner_ref.add_event_listener(
+        &canvas,
+        "dragleave",
+        |event: web_sys::DragEvent, mut runner_lock| {
+            runner_lock.input.raw.hovered_files.clear();
+            runner_lock.needs_repaint.repaint_asap();
             event.stop_propagation();
             event.prevent_default();
-        }
-    })?;
+        },
+    )?;
 
     runner_ref.add_event_listener(&canvas, "dragleave", |event: web_sys::DragEvent, runner| {
         runner.input.raw.hovered_files.clear();

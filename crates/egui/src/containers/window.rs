@@ -739,8 +739,13 @@ fn window_interaction(
     id: Id,
     rect: Rect,
 ) -> Option<WindowInteraction> {
-    if ctx.memory(|mem| mem.dragging_something_else(id)) {
-        return None;
+    {
+        let drag_id = ctx.memory(|mem| mem.interaction.drag_id);
+        if let Some(drag_state) = drag_id {
+            if drag_state.id() != id {
+                return None;
+            }
+        }
     }
 
     let mut window_interaction = ctx.memory(|mem| mem.window_interaction());
@@ -750,7 +755,7 @@ fn window_interaction(
             hover_window_interaction.set_cursor(ctx);
             if ctx.input(|i| i.pointer.any_pressed() && i.pointer.primary_down()) {
                 ctx.memory_mut(|mem| {
-                    mem.interaction_mut().drag_id = Some(id);
+                    mem.interaction_mut().drag_id = Some(DragState::Dragging(id, false));
                     mem.interaction_mut().drag_is_window = true;
                     window_interaction = Some(hover_window_interaction);
                     mem.set_window_interaction(window_interaction);
@@ -760,7 +765,11 @@ fn window_interaction(
     }
 
     if let Some(window_interaction) = window_interaction {
-        let is_active = ctx.memory_mut(|mem| mem.interaction().drag_id == Some(id));
+        let is_active = if let Some(drag_state) = &ctx.memory(|mem| mem.interaction().drag_id) {
+            drag_state.id() == id
+        } else {
+            false
+        };
 
         if is_active && window_interaction.area_layer_id == area_layer_id {
             return Some(window_interaction);

@@ -15,6 +15,7 @@ pub struct AppRunner {
     last_save_time: f64,
     pub(crate) ime: Option<egui::output::IMEOutput>,
     pub(crate) mutable_text_under_cursor: bool,
+    pub(crate) native_drag_data: Option<String>,
 
     // Output for the last run:
     textures_delta: TexturesDelta,
@@ -116,6 +117,7 @@ impl AppRunner {
             mutable_text_under_cursor: false,
             textures_delta: Default::default(),
             clipped_primitives: None,
+            native_drag_data: None,
         };
 
         runner.input.raw.max_texture_side = Some(runner.painter.max_texture_side());
@@ -247,6 +249,7 @@ impl AppRunner {
             ime,
             #[cfg(feature = "accesskit")]
                 accesskit_update: _, // not currently implemented
+            native_drag_data,
         } = platform_output;
 
         super::set_cursor_icon(cursor_icon);
@@ -258,6 +261,8 @@ impl AppRunner {
         if !copied_text.is_empty() {
             super::set_clipboard_text(&copied_text);
         }
+
+        self.native_drag_data = native_drag_data;
 
         #[cfg(not(web_sys_unstable_apis))]
         let _ = copied_text;

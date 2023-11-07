@@ -577,6 +577,8 @@ pub(crate) enum PointerEvent {
         click: Option<Click>,
         button: PointerButton,
     },
+    NativeDragStart(Pos2),
+    NativeDragEnd(Pos2),
 }
 
 impl PointerEvent {
@@ -590,6 +592,9 @@ impl PointerEvent {
 
     pub fn is_click(&self) -> bool {
         matches!(self, Self::Released { click: Some(_), .. })
+    }
+    pub fn is_native_drag(&self) -> bool {
+        matches!(self, PointerEvent::NativeDragStart(_))
     }
 }
 
@@ -705,6 +710,13 @@ impl PointerState {
                     }
 
                     self.pointer_events.push(PointerEvent::Moved(pos));
+                }
+                Event::NativeDragStart(pos) => {
+                    self.pointer_events
+                        .push(PointerEvent::NativeDragStart(*pos));
+                }
+                Event::NativeDragEnd(pos) => {
+                    self.pointer_events.push(PointerEvent::NativeDragEnd(*pos));
                 }
                 Event::PointerButton {
                     pos,

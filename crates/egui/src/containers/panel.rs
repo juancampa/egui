@@ -15,7 +15,9 @@
 //!
 //! Add your [`Window`]:s after any top-level panels.
 
+use crate::memory::DragState;
 use crate::*;
+use std::ops::RangeInclusive;
 
 /// State regarding panels.
 #[derive(Clone, Copy, Debug)]
@@ -257,7 +259,7 @@ impl SidePanel {
                 if ui.input(|i| i.pointer.any_pressed() && i.pointer.any_down())
                     && mouse_over_resize_line
                 {
-                    ui.memory_mut(|mem| mem.set_dragged_id(resize_id));
+                    ui.memory_mut(|mem| mem.set_dragged_id(DragState::Dragging(resize_id, false)));
                 }
                 is_resizing = ui.memory(|mem| mem.is_being_dragged(resize_id));
                 if is_resizing {
@@ -718,7 +720,9 @@ impl TopBottomPanel {
                 if ui.input(|i| i.pointer.any_pressed() && i.pointer.any_down())
                     && mouse_over_resize_line
                 {
-                    ui.memory_mut(|mem| mem.set_dragged_id(resize_id));
+                    ui.memory_mut(|mem| {
+                        mem.interaction_mut().drag_id = Some(DragState::Dragging(resize_id, false))
+                    });
                 }
                 is_resizing = ui.memory(|mem| mem.is_being_dragged(resize_id));
                 if is_resizing {
