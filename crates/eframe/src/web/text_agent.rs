@@ -100,25 +100,19 @@ pub fn install_text_agent(runner_ref: &WebRunner) -> Result<(), JsValue> {
         })?;
     }
 
-    // When the window (or iframe) gains focus, focus on the text agent.
+    let input_refocus = input.clone();
+    runner_ref.add_event_listener(&window, "blur", move |_event: web_sys::FocusEvent, _| {
+        // MEMBRANE: this is needed so that the input is refocused when the user comes back to the membrane iframe
+        input_refocus.set_hidden(true);
+    });
     runner_ref.add_event_listener(
         &window,
         "focus",
-        move |event: web_sys::MouseEvent, runner_lock| {
-            call_after_delay(std::time::Duration::from_millis(10), move || {
-                let window = web_sys::window().unwrap();
-                let document = window.document().unwrap();
-                if document.has_focus().unwrap_or_default() {
-                    text_agent().focus().ok();
-                    //input_refocus.focus().ok();
-                }
-            });
+        move |_event: web_sys::FocusEvent, runner| {
+            // MEMBRANE: refocus the input if needed
+            update_text_agent(runner);
         },
-    )?;
-
-    // MEMBRANE NOTE: The `focusout` handler assumes that there's nothing else in the page that could need input. For VSCode this
-    // doesn't work because it doesn't let the user type anywhere else (egui keeps stealing the focus). We use the
-    // `focus` event above instead
+    );
 
     // When input lost focus, focus on it again.
     // It is useful when user click somewhere outside canvas.
@@ -126,8 +120,13 @@ pub fn install_text_agent(runner_ref: &WebRunner) -> Result<(), JsValue> {
     runner_ref.add_event_listener(&input, "focusout", move |_event: web_sys::MouseEvent, _| {
         // Delay 10 ms, and focus again.
         let input_refocus = input_refocus.clone();
+        let document = document.clone();
         call_after_delay(std::time::Duration::from_millis(10), move || {
-            input_refocus.focus().ok();
+            // MEMBRANE NOTE: Don't refocus the input if the user is interacting with other parts of the app that is not
+            // this iframe. It will be refocused when we come back if needed by the "focus" handler above
+            if document.has_focus().unwrap_or_default() {
+                input_refocus.focus().ok();
+            }
         });
     })?;
 
