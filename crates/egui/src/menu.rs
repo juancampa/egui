@@ -162,6 +162,15 @@ pub(crate) fn menu_ui<'c, R>(
 
         menu_state_arc.write().rect = frame.response.rect;
 
+        // MEMBRANE: close any menu when the app loses focus
+        let lost_focus = ctx.input(|i| {
+            i.events
+                .iter()
+                .any(|e| matches!(e, Event::WindowFocused(false)))
+        });
+        if lost_focus {
+            menu_state_arc.write().response = MenuResponse::Close;
+        }
         frame.inner
     })
 }

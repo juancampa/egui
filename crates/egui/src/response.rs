@@ -6,6 +6,9 @@ use crate::{
     NUM_POINTER_BUTTONS,
 };
 
+// MEMBRANE: keep our imports separate to avoid rebase conflicts
+use crate::Event;
+
 // ----------------------------------------------------------------------------
 
 /// The result of adding a widget to a [`Ui`].
@@ -169,8 +172,13 @@ impl Response {
         // This is important for windows and such that should close then the user clicks elsewhere.
         self.ctx.input(|i| {
             let pointer = &i.pointer;
-
-            if pointer.any_click() {
+            // MEMBRANE: When the egui app gets unfocused, consider it as a "clicked elseware"
+            if i.events
+                .iter()
+                .any(|e| matches!(e, Event::WindowFocused(false)))
+            {
+                true
+            } else if pointer.any_click() {
                 // We detect clicks/hover on a "interact_rect" that is slightly larger than
                 // self.rect. See Context::interact.
                 // This means we can be hovered and clicked even though `!self.rect.contains(pos)` is true,

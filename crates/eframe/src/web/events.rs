@@ -56,12 +56,12 @@ pub(crate) fn request_animation_frame(runner_ref: WebRunner) -> Result<(), JsVal
 // ------------------------------------------------------------------------
 
 pub(crate) fn install_document_events(runner_ref: &WebRunner) -> Result<(), JsValue> {
-    let document = web_sys::window().unwrap().document().unwrap();
-
+    let window = web_sys::window().unwrap();
+    let document = window.document().unwrap();
     {
         // Avoid sticky modifier keys on alt-tab:
         for event_name in ["blur", "focus"] {
-            let closure = move |_event: web_sys::MouseEvent, runner: &mut AppRunner| {
+            let closure = move |_event: web_sys::FocusEvent, runner: &mut AppRunner| {
                 let has_focus = event_name == "focus";
 
                 if !has_focus {
@@ -74,7 +74,8 @@ pub(crate) fn install_document_events(runner_ref: &WebRunner) -> Result<(), JsVa
                 // log::debug!("{event_name:?}");
             };
 
-            runner_ref.add_event_listener(&document, event_name, closure)?;
+            // MEMBRANE: documents don't get these events (in iframes it seems?), but window does.
+            runner_ref.add_event_listener(&window, event_name, closure)?;
         }
     }
 
