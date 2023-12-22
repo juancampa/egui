@@ -1093,8 +1093,10 @@ impl Prepared {
             state.scroll_bar_interaction[d] = response.hovered() || response.dragged();
 
             // MEMBRANE: Prevent dragging the scrollbar while resizing a side-panel right next to it.
-            // .filter(|_| response.dragged())
-            if let Some(pointer_pos) = response.interact_pointer_pos() {
+            if let Some(pointer_pos) = response
+                .interact_pointer_pos()
+                .filter(|_| response.dragged())
+            {
                 let scroll_start_offset_from_top_left = state.scroll_start_offset_from_top_left[d]
                     .get_or_insert_with(|| {
                         if handle_rect.contains(pointer_pos) {
@@ -1147,16 +1149,16 @@ impl Prepared {
                         ),
                     )
                 };
+
+                // Ensure handle is not too small
                 let min_handle_size = scroll_style.handle_min_length;
-                if handle_rect.size()[d] < min_handle_size {
-                    handle_rect = Rect::from_center_size(
-                        handle_rect.center(),
-                        if d == 0 {
-                            vec2(min_handle_size, handle_rect.size().y)
-                        } else {
-                            vec2(handle_rect.size().x, min_handle_size)
-                        },
-                    );
+                let grow = min_handle_size - handle_rect.size()[d];
+                if grow > 0.0 {
+                    let how_scrolled = state.offset[d] / max_offset[d];
+                    let before = lerp(0.0..=grow, how_scrolled);
+                    let after = lerp(0.0..=grow, 1.0 - how_scrolled);
+                    handle_rect.min[d] -= before;
+                    handle_rect.max[d] += after;
                 }
 
                 let visuals = if scrolling_enabled {
