@@ -50,6 +50,14 @@ impl Align {
         }
     }
 
+    pub fn opposite(self) -> Self {
+        match self {
+            Self::Min => Self::Max,
+            Self::Center => Self::Center,
+            Self::Max => Self::Min,
+        }
+    }
+
     /// Returns a range of given size within a specified range.
     ///
     /// If the requested `size` is bigger than the size of `range`, then the returned
@@ -168,6 +176,10 @@ impl Align2 {
     /// -1, 0, or +1 for each axis
     pub fn to_sign(self) -> Vec2 {
         vec2(self.x().to_sign(), self.y().to_sign())
+    }
+
+    pub fn opposite(self) -> Align2 {
+        Align2([self.x().opposite(), self.y().opposite()])
     }
 
     /// Used e.g. to anchor a piece of text to a part of the rectangle.
