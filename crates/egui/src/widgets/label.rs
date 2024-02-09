@@ -24,6 +24,7 @@ use self::text_selection::LabelSelectionState;
 pub struct Label {
     text: WidgetText,
     wrap_mode: Option<TextWrapMode>,
+    tooltip: bool,
     sense: Option<Sense>,
     selectable: Option<bool>,
 }
@@ -33,6 +34,7 @@ impl Label {
         Self {
             text: text.into(),
             wrap_mode: None,
+            tooltip: true,
             sense: None,
             selectable: None,
         }
@@ -73,6 +75,16 @@ impl Label {
     #[inline]
     pub fn extend(mut self) -> Self {
         self.wrap_mode = Some(TextWrapMode::Extend);
+        self
+    }
+
+    /// If `true` and the label's text got elided, the full text will be
+    /// shown on hover as a tool-tip.
+    ///
+    /// Default is `true`.
+    #[inline]
+    pub fn tooltip(mut self, tooltip: bool) -> Self {
+        self.tooltip = tooltip;
         self
     }
 
@@ -235,13 +247,14 @@ impl Widget for Label {
         let interactive = self.sense.map_or(false, |sense| sense != Sense::hover());
 
         let selectable = self.selectable;
+        let tooltip = self.tooltip;
 
         let (galley_pos, galley, mut response) = self.layout_in_ui(ui);
         response
             .widget_info(|| WidgetInfo::labeled(WidgetType::Label, ui.is_enabled(), galley.text()));
 
         if ui.is_rect_visible(response.rect) {
-            if galley.elided {
+            if tooltip && galley.elided {
                 // Show the full (non-elided) text on hover:
                 response = response.on_hover_text(galley.text());
             }
