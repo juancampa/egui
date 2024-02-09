@@ -247,6 +247,35 @@ impl Rect {
         *self = self.translate(center - self.center());
     }
 
+    /// Sets the corner of the rectangle to the given position.
+    pub fn set_corner(&mut self, pos: Pos2, corner: Align2) {
+        for i in [0, 1] {
+            match corner[i] {
+                Align::Min => self.min[i] = pos[i],
+                Align::Max => self.max[i] = pos[i],
+                Align::Center => {
+                    self.min[i] = pos[i] - self.size()[i] / 2.0;
+                }
+            }
+        }
+    }
+
+    /// Sets the size while keeping the anchored corner fixed.
+    pub fn set_size_with_anchor(&mut self, vec: Vec2, anchor: Align2) {
+        for i in [0, 1] {
+            match anchor[i] {
+                Align::Min => self.max[i] = self.min[i] + vec[i],
+                Align::Max => self.min[i] = self.max[i] - vec[i],
+                Align::Center => {
+                    let half = vec[i] / 2.0;
+                    let center = (self.min[i] + self.max[i]) / 2.0;
+                    self.min[i] = center - half;
+                    self.max[i] = center + half;
+                }
+            }
+        }
+    }
+
     #[must_use]
     #[inline(always)]
     pub fn contains(&self, p: Pos2) -> bool {

@@ -18,11 +18,11 @@ pub(crate) struct State {
 
 impl State {
     pub fn load(ctx: &Context, id: Id) -> Option<Self> {
-        ctx.data_mut(|d| d.get_persisted(id))
+        ctx.data_mut(|d| d.get_temp(id))
     }
 
     pub fn store(self, ctx: &Context, id: Id) {
-        ctx.data_mut(|d| d.insert_persisted(id, self));
+        ctx.data_mut(|d| d.insert_temp(id, self));
     }
 }
 
@@ -42,6 +42,7 @@ pub struct Resize {
     default_size: Vec2,
 
     with_stroke: bool,
+    drag_corner: Align2,
 }
 
 impl Default for Resize {
@@ -54,6 +55,7 @@ impl Default for Resize {
             max_size: Vec2::splat(f32::INFINITY),
             default_size: vec2(320.0, 128.0), // TODO(emilk): preferred size of [`Resize`] area.
             with_stroke: true,
+            drag_corner: Align2::RIGHT_BOTTOM,
         }
     }
 }
@@ -132,6 +134,11 @@ impl Resize {
         self
     }
 
+    pub fn drag_corner(mut self, corner: Align2) -> Self {
+        self.drag_corner = corner;
+        self
+    }
+
     /// Won't expand to larger than this
     #[inline]
     pub fn max_width(mut self, max_width: f32) -> Self {
@@ -195,7 +202,7 @@ struct Prepared {
 
 impl Resize {
     fn begin(&mut self, ui: &mut Ui) -> Prepared {
-        let position = ui.available_rect_before_wrap().min;
+        let left_top = ui.available_rect_before_wrap().min;
         let id = self.id.unwrap_or_else(|| {
             let id_source = self.id_source.unwrap_or_else(|| Id::new("resize"));
             ui.make_persistent_id(id_source)
@@ -224,18 +231,42 @@ impl Resize {
             .at_least(self.min_size)
             .at_most(self.max_size);
 
-        let mut user_requested_size = state.requested_size.take();
+        let rect = Rect::from_min_size(left_top, state.desired_size);
+
+        let mut user_requested_rect = state
+            .requested_size
+            .take()
+            .map(|size| Rect::from_min_size(left_top, size));
 
         let corner_response = if self.resizable {
             // Resize-corner:
+            let id = id.with("corner");
             let corner_size = Vec2::splat(ui.visuals().resize_corner_size);
-            let corner_rect =
-                Rect::from_min_size(position + state.desired_size - corner_size, corner_size);
-            let corner_response = ui.interact(corner_rect, id.with("corner"), Sense::drag());
+            let corner_rect = self.drag_corner.align_size_within_rect(corner_size, rect);
+
+            let corner_response = ui.ctx().interact(
+                ui.clip_rect(),
+                ui.spacing().item_spacing,
+                ui.layer_id(),
+                // LayerId::new(Order::Foreground, ui.id()),
+                id,
+                corner_rect,
+                Sense::drag(),
+                ui.is_enabled(),
+            );
 
             if let Some(pointer_pos) = corner_response.interact_pointer_pos() {
-                user_requested_size =
-                    Some(pointer_pos - position + 0.5 * corner_response.rect.size());
+                let corner_pos = match self.drag_corner {
+                    Align2::LEFT_TOP => pointer_pos - corner_size * 0.5,
+                    Align2::LEFT_BOTTOM => pointer_pos + vec2(-corner_size.x, corner_size.y) * 0.5,
+                    Align2::RIGHT_TOP => pointer_pos + vec2(corner_size.x, -corner_size.y) * 0.5,
+                    Align2::RIGHT_BOTTOM => pointer_pos + corner_size * 0.5,
+                    _ => panic!("Invalid corner alignment"),
+                };
+
+                let mut requested_rect = rect;
+                requested_rect.set_corner(corner_pos, self.drag_corner);
+                user_requested_rect = Some(requested_rect);
             }
 
             Some(corner_response)
@@ -243,8 +274,8 @@ impl Resize {
             None
         };
 
-        if let Some(user_requested_size) = user_requested_size {
-            state.desired_size = user_requested_size;
+        if let Some(user_requested_rect) = user_requested_rect {
+            state.desired_size = user_requested_rect.size();
         } else {
             // We are not being actively resized, so auto-expand to include size of last frame.
             // This prevents auto-shrinking if the contents contain width-filling widgets (separators etc)
@@ -259,7 +290,13 @@ impl Resize {
 
         // ------------------------------
 
-        let inner_rect = Rect::from_min_size(position, state.desired_size);
+        let inner_rect = if let Some(mut user_requested_rect) = user_requested_rect {
+            user_requested_rect
+                .set_size_with_anchor(state.desired_size, self.drag_corner.opposite());
+            user_requested_rect
+        } else {
+            Rect::from_min_size(left_top, state.desired_size)
+        };
 
         let mut content_clip_rect = inner_rect.expand(ui.visuals().clip_rect_margin);
 
@@ -331,10 +368,15 @@ impl Resize {
         }
 
         if let Some(corner_response) = corner_response {
-            paint_resize_corner(ui, &corner_response);
+            paint_resize_corner(ui, &corner_response, self.drag_corner);
 
             if corner_response.hovered() || corner_response.dragged() {
-                ui.ctx().set_cursor_icon(CursorIcon::ResizeNwSe);
+                let resize_cursor = match self.drag_corner {
+                    Align2::LEFT_TOP | Align2::RIGHT_BOTTOM => CursorIcon::ResizeNwSe,
+                    Align2::LEFT_BOTTOM | Align2::RIGHT_TOP => CursorIcon::ResizeNeSw,
+                    _ => panic!("Invalid corner alignment"),
+                };
+                ui.ctx().set_cursor_icon(resize_cursor);
             }
         }
 
@@ -358,9 +400,9 @@ impl Resize {
 
 use epaint::Stroke;
 
-pub fn paint_resize_corner(ui: &Ui, response: &Response) {
+pub fn paint_resize_corner(ui: &Ui, response: &Response, corner: Align2) {
     let stroke = ui.style().interact(response).fg_stroke;
-    paint_resize_corner_with_style(ui, &response.rect, stroke, Align2::RIGHT_BOTTOM);
+    paint_resize_corner_with_style(ui, &response.rect, stroke, corner);
 }
 
 pub fn paint_resize_corner_with_style(
