@@ -1759,7 +1759,7 @@ impl Context {
     /// Constrain the position of a window/area so it fits within the provided boundary.
     ///
     /// If area is `None`, will constrain to [`Self::available_rect`].
-    pub(crate) fn constrain_window_rect_to_area(&self, window: Rect, area: Option<Rect>) -> Rect {
+    pub fn constrain_window_rect_to_area(&self, window: Rect, area: Option<Rect>) -> Rect {
         let mut area = area.unwrap_or_else(|| self.available_rect());
 
         if window.width() > area.width() {
