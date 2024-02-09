@@ -24,6 +24,7 @@ pub struct Label {
     text: WidgetText,
     wrap: Option<bool>,
     truncate: bool,
+    tooltip: bool,
     sense: Option<Sense>,
     selectable: Option<bool>,
 }
@@ -34,6 +35,7 @@ impl Label {
             text: text.into(),
             wrap: None,
             truncate: false,
+            tooltip: true,
             sense: None,
             selectable: None,
         }
@@ -64,7 +66,8 @@ impl Label {
     /// If `true`, the text will stop at the max width of the [`Ui`],
     /// and what doesn't fit will be elided, replaced with `…`.
     ///
-    /// If the text is truncated, the full text will be shown on hover as a tool-tip.
+    /// By default,  if the text is truncated, the full text will be shown on
+    /// hover as a tool-tip. This can be disabled with [`Self::tooltip`].
     ///
     /// Default is `false`, which means the text will expand the parent [`Ui`],
     /// or wrap if [`Self::wrap`] is set.
@@ -74,6 +77,16 @@ impl Label {
     pub fn truncate(mut self, truncate: bool) -> Self {
         self.wrap = None;
         self.truncate = truncate;
+        self
+    }
+
+    /// If `true` and the label's text got elided, the full text will be
+    /// shown on hover as a tool-tip.
+    ///
+    /// Default is `true`.
+    #[inline]
+    pub fn tooltip(mut self, tooltip: bool) -> Self {
+        self.tooltip = tooltip;
         self
     }
 
@@ -236,7 +249,8 @@ impl Widget for Label {
         response.widget_info(|| WidgetInfo::labeled(WidgetType::Label, galley.text()));
 
         if ui.is_rect_visible(response.rect) {
-            if galley.elided {
+            let tooltip = self.tooltip;
+            if tooltip && galley.elided {
                 // Show the full (non-elided) text on hover:
                 response = response.on_hover_text(galley.text());
             }
