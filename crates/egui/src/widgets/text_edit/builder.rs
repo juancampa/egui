@@ -598,11 +598,11 @@ impl<'t> TextEdit<'t> {
             if changed {
                 response.mark_changed();
 
-                // The galley can change if there was an edit this frame (handled in `events` above). If that's the
-                // case, the response's rect needs to be adjusted accordingly so that that any surrounding scroll area
-                // can scroll to the cursor. Only needed for the Y axis because scrolling horizontally is handled below
-                // and not by a ScrollArea.
-                if galley.rect.height() != prev_height {
+                // The galley can change if there was an edit this frame (handled in `events` above). If it grew taller
+                // than its containing ScrollArea (if any), we need to also grow the Response accordingly so that the
+                // ScrollArea can scroll to the cursor.  Only needed for the Y axis because scrolling horizontally is
+                // handled below
+                if galley.rect.height() > prev_height {
                     response.rect.max.y += galley.rect.height() - prev_height;
                 }
             }
