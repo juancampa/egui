@@ -579,6 +579,7 @@ impl<'t> TextEdit<'t> {
                 CursorRange::default()
             };
 
+            let prev_height = galley.rect.height();
             let (changed, new_cursor_range) = events(
                 ui,
                 &mut state,
@@ -596,6 +597,14 @@ impl<'t> TextEdit<'t> {
 
             if changed {
                 response.mark_changed();
+
+                // The galley can change if there was an edit this frame (handled in `events` above). If that's the
+                // case, the response's rect needs to be adjusted accordingly so that that any surrounding scroll area
+                // can scroll to the cursor. Only needed for the Y axis because scrolling horizontally is handled below
+                // and not by a ScrollArea.
+                if galley.rect.height() != prev_height {
+                    response.rect.max.y += galley.rect.height() - prev_height;
+                }
             }
             cursor_range = Some(new_cursor_range);
         }
