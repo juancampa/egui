@@ -132,12 +132,12 @@ pub(crate) fn interact(
             PointerEvent::Pressed { .. } => {
                 // Maybe new click?
                 if interaction.potential_click_id.is_none() {
-                    interaction.potential_click_id = hits.click.map(|w| w.id);
+                    interaction.potential_click_id = hits.click.filter(|w| w.enabled).map(|w| w.id);
                 }
 
                 // Maybe new drag?
                 if interaction.potential_drag_id.is_none() {
-                    interaction.potential_drag_id = hits.drag.map(|w| w.id);
+                    interaction.potential_drag_id = hits.drag.filter(|w| w.enabled).map(|w| w.id);
                 }
             }
 
@@ -146,6 +146,7 @@ pub(crate) fn interact(
                     if let Some(widget) = interaction
                         .potential_click_id
                         .and_then(|id| widgets.get(id))
+                        .filter(|w| w.enabled)
                     {
                         clicked = Some(widget.id);
                     }
@@ -160,7 +161,11 @@ pub(crate) fn interact(
 
     if dragged.is_none() {
         // Check if we started dragging something new:
-        if let Some(widget) = interaction.potential_drag_id.and_then(|id| widgets.get(id)) {
+        if let Some(widget) = interaction
+            .potential_drag_id
+            .and_then(|id| widgets.get(id))
+            .filter(|w| w.enabled)
+        {
             let is_dragged = if widget.sense.click && widget.sense.drag {
                 // This widget is sensitive to both clicks and drags.
                 // When the mouse first is pressed, it could be either,
