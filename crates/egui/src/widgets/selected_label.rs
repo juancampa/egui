@@ -54,10 +54,12 @@ impl Widget for SelectableLabel {
         });
 
         if ui.is_rect_visible(response.rect) {
-            let text_pos = ui
-                .layout()
-                .align_size_within_rect(galley.size(), rect.shrink2(button_padding))
-                .min;
+            // MEMBRANE: align coords to 0.5 to avoid blur in 1X scaling. Figure out a way to do this more generally.
+            let text_pos = ui.ctx().round_pos_to_pixels(
+                ui.layout()
+                    .align_size_within_rect(galley.size(), rect.shrink2(button_padding))
+                    .min,
+            );
 
             let visuals = ui.style().interact_selectable(&response, selected);
 

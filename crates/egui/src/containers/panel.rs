@@ -228,6 +228,10 @@ impl SidePanel {
 
         let available_rect = ui.available_rect_before_wrap();
         let mut panel_rect = available_rect;
+
+        // MEMBRANE: align coords to 0.5 to avoid blur in 1X scaling. Figure out a way to do this more generally.
+        panel_rect.min += Vec2::splat(0.5);
+
         {
             let mut width = default_width;
             if let Some(state) = PanelState::load(ui.ctx(), id) {
@@ -684,6 +688,10 @@ impl TopBottomPanel {
 
         let available_rect = ui.available_rect_before_wrap();
         let mut panel_rect = available_rect;
+
+        // MEMBRANE: align coords to 0.5 to avoid blur in 1X scaling. Figure out a way to do this more generally.
+        panel_rect.min += Vec2::splat(0.5);
+
         {
             let mut height = if let Some(state) = PanelState::load(ui.ctx(), id) {
                 state.rect.height()

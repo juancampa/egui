@@ -109,15 +109,18 @@ impl Widget for Separator {
         if ui.is_rect_visible(response.rect) {
             let stroke = ui.visuals().widgets.noninteractive.bg_stroke;
             let painter = ui.painter();
+            // MEMBRANE: align coords to 0.5 to avoid blur in 1X scaling. Figure out a way to do this more generally.
             if is_horizontal_line {
                 painter.hline(
                     (rect.left() - grow)..=(rect.right() + grow),
-                    painter.round_to_pixel(rect.center().y),
+                    // painter.round_to_pixel(rect.center().y),
+                    rect.center().y,
                     stroke,
                 );
             } else {
                 painter.vline(
-                    painter.round_to_pixel(rect.center().x),
+                    // painter.round_to_pixel(rect.center().x),
+                    rect.center().x,
                     (rect.top() - grow)..=(rect.bottom() + grow),
                     stroke,
                 );
