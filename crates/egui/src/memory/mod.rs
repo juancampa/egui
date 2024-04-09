@@ -96,10 +96,14 @@ pub struct Memory {
     everything_is_visible: bool,
 
     /// Transforms per layer
+    // MEMBRANE: don't persist area state
+    #[cfg_attr(feature = "persistence", serde(skip))]
     pub layer_transforms: HashMap<LayerId, TSTransform>,
 
     // -------------------------------------------------
     // Per-viewport:
+    // MEMBRANE: don't persist area state
+    #[cfg_attr(feature = "persistence", serde(skip))]
     areas: ViewportIdMap<Areas>,
 
     #[cfg_attr(feature = "persistence", serde(skip))]
