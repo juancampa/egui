@@ -42,7 +42,7 @@ pub fn highlight(ctx: &egui::Context, theme: &CodeTheme, code: &str, language: &
 #[cfg(not(feature = "syntect"))]
 #[derive(Clone, Copy, PartialEq, enum_map::Enum)]
 #[cfg_attr(feature = "serde", derive(serde::Deserialize, serde::Serialize))]
-enum TokenType {
+pub enum TokenType {
     Comment,
     Keyword,
     Literal,
@@ -130,7 +130,7 @@ pub struct CodeTheme {
     syntect_theme: SyntectTheme,
 
     #[cfg(not(feature = "syntect"))]
-    formats: enum_map::EnumMap<TokenType, egui::TextFormat>,
+    pub formats: enum_map::EnumMap<TokenType, egui::TextFormat>,
 }
 
 impl Default for CodeTheme {
