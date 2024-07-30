@@ -708,7 +708,7 @@ impl Memory {
     }
 
     /// True if the given widget had keyboard focus last frame, but not this one.
-    pub(crate) fn lost_focus(&self, id: Id) -> bool {
+    pub fn lost_focus(&self, id: Id) -> bool {
         self.had_focus_last_frame(id) && !self.has_focus(id)
     }
 
