@@ -1065,7 +1065,7 @@ impl Areas {
         self.areas.len()
     }
 
-    pub(crate) fn get(&self, id: Id) -> Option<&area::AreaState> {
+    pub fn get(&self, id: Id) -> Option<&area::AreaState> {
         self.areas.get(&id)
     }
 
@@ -1073,7 +1073,7 @@ impl Areas {
         self.areas.remove(&id);
     }
 
-    pub fn get_mut(&mut self, id: Id) -> Option<&mut area::State> {
+    pub fn get_mut(&mut self, id: Id) -> Option<&mut area::AreaState> {
         self.areas.get_mut(&id)
     }
 
