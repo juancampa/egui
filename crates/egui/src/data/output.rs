@@ -118,6 +118,9 @@ pub struct PlatformOutput {
     /// Useful for IME.
     pub ime: Option<IMEOutput>,
 
+    /// MEMBRANE: Support dragging things natively outside of the canvas.
+    pub native_drag_payload: Option<String>,
+
     /// The difference in the widget tree since last frame.
     ///
     /// NOTE: this needs to be per-viewport.
@@ -153,6 +156,7 @@ impl PlatformOutput {
             mut events,
             mutable_text_under_cursor,
             ime,
+            native_drag_payload,
             #[cfg(feature = "accesskit")]
             accesskit_update,
         } = newer;
@@ -167,6 +171,7 @@ impl PlatformOutput {
         self.events.append(&mut events);
         self.mutable_text_under_cursor = mutable_text_under_cursor;
         self.ime = ime.or(self.ime);
+        self.native_drag_payload = native_drag_payload;
 
         #[cfg(feature = "accesskit")]
         {
