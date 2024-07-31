@@ -6,6 +6,9 @@ use crate::{
     WidgetText,
 };
 
+// MEMBRANE: keep our imports separate to avoid rebase conflicts
+use crate::Event;
+
 // ----------------------------------------------------------------------------
 
 /// The result of adding a widget to a [`Ui`].
@@ -206,13 +209,27 @@ impl Response {
         // We do not use self.clicked(), because we want to catch all clicks within our frame,
         // even if we aren't clickable (or even enabled).
         // This is important for windows and such that should close then the user clicks elsewhere.
+        let transform = self
+            .ctx
+            .memory(|m| m.layer_transforms.get(&self.layer_id).cloned());
         self.ctx.input(|i| {
             let pointer = &i.pointer;
 
-            if pointer.any_click() {
+            // MEMBRANE: When the egui app gets unfocused, consider it as a "clicked elseware"
+            if i.events
+                .iter()
+                .any(|e| matches!(e, Event::WindowFocused(false)))
+            {
+                true
+            } else if pointer.any_click() {
                 if self.contains_pointer || self.hovered {
                     false
                 } else if let Some(pos) = pointer.interact_pos() {
+                    let pos = if let Some(transform) = transform {
+                        transform.inverse().mul_pos(pos)
+                    } else {
+                        pos
+                    };
                     !self.interact_rect.contains(pos)
                 } else {
                     false // clicked without a pointer, weird
