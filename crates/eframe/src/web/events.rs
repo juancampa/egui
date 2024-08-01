@@ -109,6 +109,19 @@ fn install_blur_focus(runner_ref: &WebRunner, target: &EventTarget) -> Result<()
             if event_name == "blur" {
                 // This might be a good time to save the state
                 runner.save();
+
+                // MEMBRANE: Some keyboard shortcuts steal away the focus from egui which means we won't get keyup
+                // events for those shortcut keys.
+                let keys_down = runner.egui_ctx().input(|i| i.keys_down.clone());
+                for key in keys_down {
+                    runner.input.raw.events.push(egui::Event::Key {
+                        key,
+                        physical_key: None,
+                        pressed: false,
+                        repeat: false,
+                        modifiers: egui::Modifiers::NONE,
+                    });
+                }
             }
         };
 
@@ -190,7 +203,8 @@ pub(crate) fn on_keydown(event: web_sys::KeyboardEvent, runner: &mut AppRunner) 
         }
 
         // Assume egui uses all key events, and don't let them propagate to parent elements.
-        event.stop_propagation();
+        // MEMBRANE: Stopping propagation here prevents vscode from handling key events while gaze is focused.
+        // event.stop_propagation();
     }
 }
 
@@ -274,7 +288,8 @@ pub(crate) fn on_keyup(event: web_sys::KeyboardEvent, runner: &mut AppRunner) {
     let has_focus = runner.input.raw.focused;
     if has_focus {
         // Assume egui uses all key events, and don't let them propagate to parent elements.
-        event.stop_propagation();
+        // MEMBRANE: Stopping propagation here prevents vscode from handling key events while gaze is focused.
+        // event.stop_propagation();
     }
 }
 
