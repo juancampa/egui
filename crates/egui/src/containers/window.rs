@@ -467,7 +467,10 @@ impl<'open> Window<'open> {
         let (title_bar_height, title_content_spacing) = if with_title_bar {
             let style = ctx.style();
             let spacing = window_margin.top + window_margin.bottom;
-            let height = ctx.fonts(|f| title.font_height(f, &style)) + spacing;
+            let height = ctx
+                .fonts(|f| title.font_height(f, &style))
+                .max(ctx.style().spacing.interact_size.y)
+                + spacing;
             window_frame.rounding.ne = window_frame.rounding.ne.clamp(0.0, height / 2.0);
             window_frame.rounding.nw = window_frame.rounding.nw.clamp(0.0, height / 2.0);
             (height, spacing)
@@ -528,6 +531,7 @@ impl<'open> Window<'open> {
                 let title_bar = show_title_bar(
                     &mut frame.content_ui,
                     title,
+                    title_bar_height,
                     show_close_button,
                     &mut collapsing,
                     collapsible,
@@ -1033,14 +1037,12 @@ struct TitleBar {
 fn show_title_bar(
     ui: &mut Ui,
     title: WidgetText,
+    height: f32,
     show_close_button: bool,
     collapsing: &mut CollapsingState,
     collapsible: bool,
 ) -> TitleBar {
     let inner_response = ui.horizontal(|ui| {
-        let height = ui
-            .fonts(|fonts| title.font_height(fonts, ui.style()))
-            .max(ui.spacing().interact_size.y);
         ui.set_min_height(height);
 
         let item_spacing = ui.spacing().item_spacing;
