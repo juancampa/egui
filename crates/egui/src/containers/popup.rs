@@ -204,7 +204,11 @@ fn show_tooltip_at_dyn<'c, R>(
             // will stick around when you try to click them.
             ui.style_mut().interaction.selectable_labels = false;
 
-            Frame::popup(&ctx.style()).show_dyn(ui, add_contents).inner
+            // MEMBRANE: Menu margins don't really work well for tooltips.
+            Frame::popup(&ctx.style())
+                .inner_margin(Margin::symmetric(8.0, 4.0))
+                .show_dyn(ui, add_contents)
+                .inner
         });
 
     state.tooltip_count += 1;
