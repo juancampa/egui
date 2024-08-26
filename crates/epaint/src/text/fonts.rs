@@ -182,7 +182,8 @@ impl Default for FontTweak {
             scale: 1.0,
             y_offset_factor: 0.0,
             y_offset: 0.0,
-            baseline_offset_factor: -0.0333, // makes the default fonts look more centered in buttons and such
+            baseline_offset_factor: 0.0,
+            // baseline_offset_factor: -0.0333, // makes the default fonts look more centered in buttons and such
         }
     }
 }
@@ -292,7 +293,7 @@ impl Default for FontDefinitions {
 
                     // probably not correct, but this does make texts look better (#2724 for details)
                     y_offset_factor: 0.11, // move glyphs down to better align with common fonts
-                    baseline_offset_factor: -0.11, // ...now the entire row is a bit down so shift it back
+                    // baseline_offset_factor: -0.11, // ...now the entire row is a bit down so shift it back
                     ..Default::default()
                 },
             ),
@@ -778,6 +779,7 @@ impl FontImplCache {
                     font_name.to_owned(),
                     ab_glyph_font,
                     scale_in_pixels,
+                    scale_in_points,
                     tweak,
                 ))
             })

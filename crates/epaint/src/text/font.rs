@@ -58,6 +58,17 @@ impl Default for GlyphInfo {
     }
 }
 
+use wasm_bindgen::prelude::*;
+
+#[cfg(target_arch = "wasm32")]
+#[wasm_bindgen]
+extern "C" {
+    #[wasm_bindgen()]
+    fn render_glyph(s: String, font_size: f32, w: usize, h: usize) -> Box<[u8]>;
+    fn get_glyph_width() -> i32;
+    fn get_glyph_height() -> i32;
+}
+
 // ----------------------------------------------------------------------------
 
 /// A specific font with a size.
@@ -69,6 +80,8 @@ pub struct FontImpl {
     /// Maximum character height
     scale_in_pixels: u32,
 
+    font_size: f32,
+
     height_in_points: f32,
 
     // move each character by this much (hack)
@@ -78,6 +91,9 @@ pub struct FontImpl {
     pixels_per_point: f32,
     glyph_info_cache: RwLock<ahash::HashMap<char, GlyphInfo>>, // TODO(emilk): standard Mutex
     atlas: Arc<Mutex<TextureAtlas>>,
+
+    // MEMBRANE: hack
+    glyph_id_to_char: ahash::HashMap<ab_glyph::GlyphId, char>,
 }
 
 impl FontImpl {
@@ -87,6 +103,7 @@ impl FontImpl {
         name: String,
         ab_glyph_font: ab_glyph::FontArc,
         scale_in_pixels: f32,
+        font_size: f32,
         tweak: FontTweak,
     ) -> Self {
         assert!(scale_in_pixels > 0.0);
@@ -122,6 +139,8 @@ impl FontImpl {
         // Round to closest pixel:
         let y_offset_in_points = (y_offset_points * pixels_per_point).round() / pixels_per_point;
 
+        let glyph_id_to_char = ab_glyph_font.codepoint_ids().collect();
+
         Self {
             name,
             ab_glyph_font,
@@ -130,8 +149,10 @@ impl FontImpl {
             y_offset_in_points,
             ascent: ascent + baseline_offset,
             pixels_per_point,
+            font_size,
             glyph_info_cache: Default::default(),
             atlas,
+            glyph_id_to_char,
         }
     }
 
@@ -269,7 +290,7 @@ impl FontImpl {
 
         let glyph = glyph_id.with_scale_and_position(
             self.scale_in_pixels as f32,
-            ab_glyph::Point { x: 0.0, y: 0.0 },
+            ab_glyph::Point { x: 0.0, y: -0.0 },
         );
 
         let uv_rect = self.ab_glyph_font.outline_glyph(glyph).map(|glyph| {
@@ -282,13 +303,46 @@ impl FontImpl {
                 let glyph_pos = {
                     let atlas = &mut self.atlas.lock();
                     let (glyph_pos, image) = atlas.allocate((glyph_width, glyph_height));
-                    glyph.draw(|x, y, v| {
-                        if 0.0 < v {
-                            let px = glyph_pos.0 + x as usize;
-                            let py = glyph_pos.1 + y as usize;
-                            image[(px, py)] = v;
+
+                    let char = self
+                        .glyph_id_to_char
+                        .get(&glyph.glyph().id)
+                        .map(|c| *c)
+                        .unwrap_or('?');
+                    let buffer =
+                        render_glyph(char.to_string(), self.font_size, glyph_width, glyph_height);
+                    let width = get_glyph_width();
+                    let height = get_glyph_height();
+                    if char == 't' || char == 'a' {
+                        log::error!(
+                            "JUAN {}@{} {} ({}, {}) ({} {})",
+                            self.name,
+                            self.font_size,
+                            char,
+                            glyph_width,
+                            glyph_height,
+                            width,
+                            height
+                        );
+                    }
+                    if self.name == "JetBrainsMono" {
+                        for y in 0..height {
+                            for x in 0..width {
+                                let px = glyph_pos.0 + x as usize;
+                                let py = glyph_pos.1 + y as usize;
+                                let v = buffer[(y * width + x) as usize];
+                                image[(px, py)] = (v as f32) / 255.0;
+                            }
                         }
-                    });
+                    } else {
+                        glyph.draw(|x, y, v| {
+                            if 0.0 < v {
+                                let px = glyph_pos.0 + x as usize;
+                                let py = glyph_pos.1 + y as usize;
+                                image[(px, py)] = v; //v.powf(2.2);
+                            }
+                        });
+                    }
                     glyph_pos
                 };
 
@@ -312,7 +366,15 @@ impl FontImpl {
             .ab_glyph_font
             .as_scaled(self.scale_in_pixels as f32)
             .h_advance(glyph_id)
+            // .round()
             / self.pixels_per_point;
+        if self.name == "JetBrainsMono" && self.font_size == 11.0 {
+            log::error!(
+                "JUAN ADVANCE FOR {} IS {}",
+                self.glyph_id_to_char.get(&glyph_id).unwrap(),
+                advance_width_in_points
+            );
+        }
 
         GlyphInfo {
             id: glyph_id,
