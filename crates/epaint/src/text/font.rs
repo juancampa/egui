@@ -267,9 +267,16 @@ impl FontImpl {
         assert!(glyph_id.0 != 0);
         use ab_glyph::{Font as _, ScaleFont};
 
+        // MEMBRANE: HACK: Slightly shift and scale to improve grid alignment of JetBrainsMono
+        // TODO: This should be configurable via FontTweak
+        const MEMBRANE_FONT_SCALE: f32 = 1.04;
+        const MEMBRANE_FONT_SHIFT: f32 = 0.2;
         let glyph = glyph_id.with_scale_and_position(
-            self.scale_in_pixels as f32,
-            ab_glyph::Point { x: 0.0, y: 0.0 },
+            (self.scale_in_pixels as f32) * MEMBRANE_FONT_SCALE,
+            ab_glyph::Point {
+                x: 0.0,
+                y: -MEMBRANE_FONT_SHIFT,
+            },
         );
 
         let uv_rect = self.ab_glyph_font.outline_glyph(glyph).map(|glyph| {
@@ -312,7 +319,8 @@ impl FontImpl {
             .ab_glyph_font
             .as_scaled(self.scale_in_pixels as f32)
             .h_advance(glyph_id)
-            / self.pixels_per_point;
+            / self.pixels_per_point
+            * MEMBRANE_FONT_SCALE;
 
         GlyphInfo {
             id: glyph_id,
