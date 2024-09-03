@@ -99,8 +99,6 @@ impl<'a> Widget for Checkbox<'a> {
             // let visuals = ui.style().interact_selectable(&response, *checked); // too colorful
             let visuals = ui.style().interact(&response);
             let (small_icon_rect, big_icon_rect) = ui.spacing().icon_rectangles(rect);
-            let small_icon_rect = ui.painter().round_rect_to_pixels(small_icon_rect);
-            let big_icon_rect = ui.painter().round_rect_to_pixels(big_icon_rect);
             ui.painter().add(epaint::RectShape::new(
                 big_icon_rect.expand(visuals.expansion),
                 visuals.rounding,
