@@ -22,12 +22,6 @@ pub fn code_view_ui(
 ///
 /// The results are memoized, so you can call this every frame without performance penalty.
 pub fn highlight(ctx: &egui::Context, theme: &CodeTheme, code: &str, language: &str) -> LayoutJob {
-    impl egui::util::cache::ComputerMut<(&CodeTheme, &str, &str), LayoutJob> for Highlighter {
-        fn compute(&mut self, (theme, code, lang): (&CodeTheme, &str, &str)) -> LayoutJob {
-            self.highlight(theme, code, lang)
-        }
-    }
-
     type HighlightCache = egui::util::cache::FrameCache<LayoutJob, Highlighter>;
 
     ctx.memory_mut(|mem| {
@@ -35,6 +29,13 @@ pub fn highlight(ctx: &egui::Context, theme: &CodeTheme, code: &str, language: &
             .cache::<HighlightCache>()
             .get((theme, code, language))
     })
+}
+
+// MEMBRANE: moved impl out of highlight fn to suppress warning
+impl egui::util::cache::ComputerMut<(&CodeTheme, &str, &str), LayoutJob> for Highlighter {
+    fn compute(&mut self, (theme, code, lang): (&CodeTheme, &str, &str)) -> LayoutJob {
+        self.highlight(theme, code, lang)
+    }
 }
 
 // ----------------------------------------------------------------------------
