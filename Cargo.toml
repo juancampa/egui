@@ -117,6 +117,9 @@ unused_lifetimes = "warn"
 trivial_casts = "allow"
 unused_qualifications = "allow"
 
+# MEMBRANE: added to suppress warning
+unexpected_cfgs = { level = "warn", check-cfg = ['cfg(web_sys_unstable_apis)'] }
+
 [workspace.lints.rustdoc]
 all = "warn"
 missing_crate_level_docs = "warn"
