@@ -103,7 +103,8 @@ impl<'a> Widget for Checkbox<'a> {
             let visuals = ui.style().interact(&response);
             let (small_icon_rect, big_icon_rect) = ui.spacing().icon_rectangles(rect);
             ui.painter().add(epaint::RectShape::new(
-                big_icon_rect.expand(visuals.expansion),
+                ui.painter()
+                    .round_rect_to_pixels(big_icon_rect.expand(visuals.expansion)),
                 visuals.rounding,
                 visuals.bg_fill,
                 visuals.bg_stroke,
