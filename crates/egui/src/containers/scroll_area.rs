@@ -585,7 +585,10 @@ impl ScrollArea {
             }
         }
 
-        let content_max_rect = Rect::from_min_size(inner_rect.min - state.offset, content_max_size);
+        let content_max_rect = ui.ctx().round_rect_to_pixels(Rect::from_min_size(
+            inner_rect.min - state.offset,
+            content_max_size,
+        ));
         let mut content_ui = ui.new_child(
             UiBuilder::new()
                 .ui_stack_info(UiStackInfo::new(UiKind::ScrollArea))
