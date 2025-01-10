@@ -22,7 +22,8 @@ impl TextAgent {
             .create_element("input")?
             .dyn_into::<web_sys::HtmlInputElement>()?;
         input.set_type("text");
-        input.set_autofocus(true);
+        // MEMBRANE: browser blocks autofocus in a cross-origin iframe
+        // input.set_autofocus(true);
         input.set_attribute("autocapitalize", "off")?;
 
         // append it to `<body>` and hide it outside of the viewport
