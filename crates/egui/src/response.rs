@@ -232,7 +232,8 @@ impl Response {
                 .any(|e| matches!(e, crate::Event::WindowFocused(false)))
             {
                 true
-            } else if pointer.any_click() {
+            // MEMBRANE: Consider pointer down as a "clicked elsewhere" so that menus close when unrelated dragging stuff
+            } else if pointer.any_down() {
                 if self.contains_pointer || self.hovered {
                     false
                 } else if let Some(pos) = pointer.interact_pos() {
