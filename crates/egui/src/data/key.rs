@@ -174,6 +174,9 @@ pub enum Key {
     F33,
     F34,
     F35,
+
+    // MEMBRANE: Remove once this gets implemented: https://github.com/emilk/egui/issues/3653
+    Meta,
     // When adding keys, remember to also update:
     // * crates/egui-winit/src/lib.rs
     // * Key::ALL
@@ -419,6 +422,8 @@ impl Key {
             "F33" => Self::F33,
             "F34" => Self::F34,
             "F35" => Self::F35,
+            // MEMBRANE: Remove once this gets implemented: https://github.com/emilk/egui/issues/3653
+            "Meta" => Self::Meta,
 
             _ => return None,
         })
@@ -567,6 +572,9 @@ impl Key {
             Self::F33 => "F33",
             Self::F34 => "F34",
             Self::F35 => "F35",
+
+            // MEMBRANE: Remove once this gets implemented: https://github.com/emilk/egui/issues/3653
+            Self::Meta => "Meta",
         }
     }
 }
