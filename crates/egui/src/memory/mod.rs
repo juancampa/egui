@@ -1197,7 +1197,7 @@ impl Areas {
 
     /// Compare the order of two layers, based on the order list from last frame.
     /// May return [`std::cmp::Ordering::Equal`] if the layers are not in the order list.
-    pub(crate) fn compare_order(&self, a: LayerId, b: LayerId) -> std::cmp::Ordering {
+    pub fn compare_order(&self, a: LayerId, b: LayerId) -> std::cmp::Ordering {
         if let (Some(a), Some(b)) = (self.order_map.get(&a), self.order_map.get(&b)) {
             a.cmp(b)
         } else {
